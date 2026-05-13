@@ -101,31 +101,12 @@ Once the five core questions are answered cleanly, the following challenges move
 The goal here is learning to create new analytical columns from raw data, then using those engineered features to answer questions the raw schema cannot answer directly.
 
 ---
-
-**L1-Q1 — Price Tier Volume**
-Engineer a `price_category` column using `pd.cut()` with four tiers: Free, Budget ($0.01–$9.99), Mid-Range ($10–$29.99), and Premium ($30+). Which tier has the highest total estimated ownership volume, and which has the best average approval ratio?
-
-> This is not just binning practice — it forces you to think about whether the market rewards accessibility or premium positioning.
-
-*Skills: `pd.cut`, labeled bins, `groupby`, multi-metric summary table*
-
----
-
-**L1-Q2 — Genre Saturation**
+**Genre Saturation**
 For each genre, calculate two numbers: the count of games published (supply) and the average `owners` per game (demand proxy). Plot supply against demand to identify which genres are oversaturated (many games, few owners each) and which are underserved (few games, high owners each).
 
 > Oversaturation means entering that genre as a developer is a bad bet. Underserved genres with high ownership are the actual market opportunity. This is how real market research works.
 
 *Skills: `groupby` with `count` and `mean`, scatter plot with genre labels, quadrant annotation*
-
----
-
-**L1-Q3 — True Crowd Favorites**
-Build an `approval_ratio` column and filter to games with more than 1,000 total ratings for statistical significance. Among those, find the top 20 games by approval ratio. What do they have in common — genre, price tier, release era, platform?
-
-> With fewer than 1,000 ratings, a 95% approval ratio is meaningless. With 50,000+ ratings, it is a genuine signal. The filter is the whole point of this question.
-
-*Skills: derived column, boolean masking, `nlargest`, cross-referencing multiple columns*
 
 ---
 
@@ -135,16 +116,7 @@ The goal here is reasoning across time and building revenue models that account 
 
 ---
 
-**L2-Q1 — Paid Game Revenue by Category**
-Calculate estimated revenue (`price × owners_avg`) only for games where `price > 0`. Group by `categories` and find which categories generate the most total revenue and the best revenue per game. Free-to-play is excluded intentionally — their revenue model is not captured in this dataset.
-
-> Mixing F2P and paid games in a revenue calculation produces a meaningless number. F2P games report $0 price but generate real money through DLC and microtransactions. Excluding them is not a limitation to hide — it is the correct analytical decision to document.
-
-*Skills: boolean filter before aggregation, `groupby` on a multi-value string column, sorting, bar chart*
-
----
-
-**L2-Q2 — Price Creep Over Time**
+**Price Creep Over Time**
 Extract the release year from `release_date` and calculate the average game price per year from 2000 to present. Plot the trend. Has the average price of a Steam game increased over time, and did the introduction of Steam Direct in 2017 correlate with any change?
 
 > If average price is rising it could mean premium games are more common, or it could mean the budget/free tier is shrinking as a proportion. The raw average does not distinguish these — so also plot the median alongside the mean.
@@ -153,40 +125,12 @@ Extract the release year from `release_date` and calculate the average game pric
 
 ---
 
-**L2-Q3 — Cult Classic vs. Obscure: Rare Tag Analysis**
-Find the 10 rarest `steamspy_tags` by frequency. For each, calculate the median playtime and total owner count. Does rarity correlate with cult status (high median playtime, small audience) or genuine obscurity (low playtime, low owners)?
-
-> A cult classic has a small but deeply engaged audience. An obscure game has a small audience that also does not play it much. These are very different outcomes and require two metrics to distinguish.
-
-*Skills: tag frequency counting, `value_counts`, filtered `groupby`, scatter plot*
-
----
-
 ### 🚀 Level 3 — Cross-Dimensional Analysis
 
 The goal here is combining multiple columns and dimensions simultaneously to answer questions that cannot be answered by looking at one thing at a time.
 
 ---
-
-**L3-Q1 — Platform Support and Ownership**
-Parse the `platforms` column to create boolean flags for Windows, Mac, and Linux support. Compare average `owners` across four groups: Windows-only, Windows+Mac, Windows+Linux, and all three platforms. Does broader platform support correlate with higher ownership?
-
-> Causality cannot be established here — bigger studios both support more platforms and have larger marketing budgets. But the correlation itself is worth measuring, and documenting that limitation is part of the analysis.
-
-*Skills: string parsing, boolean column engineering, multi-group comparison, bar chart*
-
----
-
-**L3-Q2 — Maturity Rating and Playtime**
-Group games by `required_age` (0, 13, 17, 18+) and compare average and median playtime. Do games with a higher maturity rating retain players longer, or is the relationship flat?
-
-> Mature games often have more complex mechanics and longer stories, which could explain higher playtime. But they also have a smaller addressable audience, which could suppress the owner count. Measuring both lets you see the full picture.
-
-*Skills: `groupby` on a discrete numeric column, dual-metric `agg`, bar chart*
-
----
-
-**L3-Q3 — Black Swan Detection**
+**Black Swan Detection**
 Plot `positive_ratings` on the x-axis against `owners` on the y-axis on a log scale. Games in the top-right quadrant (high ratings, high ownership) are expected successes. The interesting targets are games in the top-left quadrant — high ownership despite low or mediocre rating ratios. Find and name them.
 
 > These are games that sold exceptionally well despite poor reception. Understanding why — early access hype, aggressive marketing, IP recognition — is more analytically interesting than studying straightforward successes.
