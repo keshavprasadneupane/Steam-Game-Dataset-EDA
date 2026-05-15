@@ -100,6 +100,8 @@ print(ratio_df)
 
 
 
+
+# steam-game-dataset-eda ❯ uv run Question/qn_4.py
 # Paid and F2p game Statistic
 #    type platform  total_game  total_achievement  achievements_median  achievements_mean  standard_deviation
 # 0   F2p  windows         404              25352                 30.0            62.7525          132.247768
@@ -115,3 +117,65 @@ print(ratio_df)
 # 0  windows          0.111479                 0.104478                   1.111111                 0.937203                  0.404853
 # 1      mac          0.106122                 0.106309                   1.160000                 1.001754                  0.331318
 # 2    linux          0.082576                 0.063254                   0.923077                 0.766012                  0.262102
+
+# Observation
+# 1. Central Tendency (Median vs. Mean):
+# On dominant platforms (Windows and Mac), F2P games exhibit a slightly higher median 
+# achievement count (+1 to +3) compared to Paid games. While this minor margin is statistically 
+# negligible in the broader market, it indicates that F2P titles establish a reliable baseline 
+# floor for achievements, using them as structural engagement hooks to drive player retention.
+#
+# 2. Dispersion and Volatility (The "Wild West" Variance):
+# The defining metric is the Standard Deviation (σ). F2P games maintain a highly constrained, 
+# consistent variation (σ ≈ 63 - 132), proving that their achievement design follows strict, 
+# standardized deployment patterns. Conversely, Paid games represent a "Wild West" scenario, 
+# with a massive standard deviation (up to 200+ points higher than F2P). This immense volatility 
+# highlights a highly fragmented market ranging from minimalist indie projects with minimal 
+# achievements to extreme "achievement spam" titles that heavily inflate the variance.
+#
+# 3. The Linux Ecosystem Anomaly:
+# Linux acts as an outlier, bucking the median trend. This is a highly constrained, non-native 
+# sampling environment. Because the vast majority of Linux gaming relies on translation layers 
+# like Proton or Wine rather than native Linux architecture, developers rarely optimize or tailor 
+# system telemetry specifically for this ecosystem. The Linux metrics are essentially a distorted, 
+# low-sample echo of the Windows market.
+#
+# 4. Data Constraints & External Architecture (The "Gacha/Launcher" Blindspot):
+# It is critical to note that Steam's API data inherently underrepresents the true scale of 
+# F2P achievement systems. Massive live-service and Gacha titles (e.g., Genshin Impact) track 
+# hundreds or thousands of progressive milestones natively inside their own proprietary clients 
+# and launchers, passing only a fraction (or none) to the public Steam profile API. If full 
+# internal telemetry for these high-engagement F2P ecosystems were exposed, a handful of dominant 
+# live-service titles would completely skew the F2P distribution curves.
+#
+# Summary Conclusion:
+# F2P games enforce a predictable, highly standardized, and consistent achievement density to 
+# protect retention loops. Paid games operate with extreme volatility, stretching across a wide, 
+# unconstrained spectrum of design philosophies.
+
+
+
+
+
+
+
+
+
+
+
+# my observation but without structure.
+# Observation
+# From the data, i can say is the f2p games slightly have more achievenemt than the paid games
+# in the data we can see in all platfrom except linux the median achievement count is like 1-2 count more than the 
+# paid game which is slightly more than paid but in the grand scheme of the game market the count difference is very
+# insignificant, but if we take the look by another angle from the standard deviation we can see that f2p games have very
+# standard and low variation achievement count in all games in every platfrom the achievement standard deviation is like
+# 200 point less than the paid, so this mean the achievement count in all f2p is hight but they are consistant, 
+# while the achievement count for paid is like a wild west, since the vairation is huge so there are games with almost like 10 achievement 
+# or some games like 100+ achievement. about linux this location is like a little bit of uncarted area even though some games,
+# support the linux but mostly game are being using proton or wine layer, so from my observation(u can call this bias), linux market 
+# i will say is getting piggy ride due to the label in game rather than actual gameplay.
+# finally the f2p achievement count shown here is not even full achievement count when a game called genshin have 1600+ ahcievement in it but ,
+# it is being counted fully in game, so just based on the data i can say.
+# SO finally, F2p games have higher consistant number of achievement count, while paid game may have low or really high achievement count.
+# but if the fully ingame f2p/gatcha game are counted this this whole chart will be dominated just by 10 gatcha games
