@@ -6,8 +6,10 @@ from pathlib import Path
 from matplotlib import pyplot as plt
 import pandas as pd
 
-base_path: Path = Path(__file__).resolve().parent.parent
-path: Path = base_path / "data" / "cleaned_data.csv"
+root_path: Path = Path(__file__).resolve().parent.parent
+path: Path = root_path / "data" / "cleaned_data.csv"
+save_file_path = root_path/ "output_picture"
+
 
 APPROVAL_RATING_RATIO_FILTER = 0.9
 MINIMUM_RATING_FILTER = 500
@@ -40,31 +42,62 @@ print(merge_sorted)
 
 
 
-# graph
 
+#0--------------------------------------------------------------------------------------------------
+import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
+# 1. Filter for a relevant decade window leading up to the 2019 cutoff
+plot_df = merge_sorted.loc[2010:2019]
 
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
+# 2. Initialize the dual-axis plot
+fig, ax1 = plt.subplots(figsize=(12, 7), dpi=100)
 
+# 3. Plot Total Steam Releases (Primary Y-Axis)
+color_total = '#b3cde3'  # Soft muted blue
+ax1.bar(plot_df.index, plot_df["total_releases_total"], 
+        color=color_total, alpha=0.75, width=0.6, label="Total Steam Releases")
 
-ax1.bar(merge_sorted.index, merge_sorted["total_releases_total"], color='skyblue', label="Total Steam Releases")
-ax1.set_title("Total Game Releases per Year", fontsize=14, fontweight='bold')
-ax1.set_ylabel("Count of Games")
-ax1.grid(axis='y', linestyle='--', alpha=0.7)
-ax1.axvline(x=2017, color='red', linestyle='--', label="Steam Direct (2017)")
-ax1.legend()
+ax1.set_xlabel("Year of Release", fontsize=12, fontweight='bold', labelpad=12)
+ax1.set_ylabel("Total Volume of Game Releases", color='#4f5b66', fontsize=12, fontweight='bold')
+ax1.tick_params(axis='y', labelcolor='#4f5b66')
+ax1.set_xticks(plot_df.index)  # Show every year clearly
+ax1.grid(axis='y', linestyle='--', alpha=0.3)
 
-ax2.plot(merge_sorted.index, merge_sorted["platinum_market_share"], color='gold', marker='o', linewidth=3, markersize=8)
-ax2.set_title("Platinum Market Share %: 'Quality Density' Over Time", fontsize=14, fontweight='bold')
-ax2.set_ylabel("Market Share Percentage (%)")
-ax2.set_xlabel("Year")
+# 4. Plot Platinum Market Share (Secondary Y-Axis)
+ax2 = ax1.twiny() # Using twinx to overlay over the same X axis
+ax2 = ax1.twinx() 
+color_plat = '#d95f02'  # Accent orange
 
-ax2.set_ylim(0, 40) 
-ax2.grid(axis='y', linestyle='--', alpha=0.7)
+ax2.plot(plot_df.index, plot_df["platinum_market_share"], 
+         color=color_plat, marker='o', linewidth=3, markersize=8, 
+         label="Platinum Market Share %")
 
-ax2.annotate('Market Saturation Begins', xy=(2014, 7), xytext=(2008, 20),
-             arrowprops=dict(facecolor='black', shrink=0.05))
+ax2.set_ylabel("Platinum Market Share (% of Total Market)", color=color_plat, fontsize=12, fontweight='bold')
+ax2.tick_params(axis='y', labelcolor=color_plat)
+
+# Tighten the limits based strictly on the 2010-2019 data variance
+# This prevents the line from flattening out at the bottom
+min_share = plot_df["platinum_market_share"].min()
+max_share = plot_df["platinum_market_share"].max()
+ax2.set_ylim(max(0, min_share * 0.8), max_share * 1.2)
+ax2.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f'{y:.1f}%'))
+
+# 5. Draw the 2017 Steam Direct Line directly through the center of our window
+ax1.axvline(x=2017, color='#d62728', linestyle='--', linewidth=2.5, 
+            label="Steam Direct Policy (2017)")
+
+# 6. Title and Legend
+plt.title("Impact of Steam Direct (2017) on High-End Market Share\nData Snapshot: 2010 – 2019 Cutoff", 
+          fontsize=14, fontweight='bold', pad=20)
+
+lines1, labels1 = ax1.get_legend_handles_labels()
+lines2, labels2 = ax2.get_legend_handles_labels()
+ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left', frameon=True, facecolor='white')
 
 plt.tight_layout()
+
+# Save the focused snapshot
+plt.savefig(save_file_path / "q3_platinum_tier_2019_cutoff_analysis.png", bbox_inches='tight')
 plt.show()
 
 

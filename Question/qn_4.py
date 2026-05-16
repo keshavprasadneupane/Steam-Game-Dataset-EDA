@@ -6,8 +6,11 @@ from pathlib import Path
 from matplotlib import pyplot as plt
 import pandas as pd
 
-base_path: Path = Path(__file__).resolve().parent.parent
-path: Path = base_path / "data" / "cleaned_data.csv"
+root_path: Path = Path(__file__).resolve().parent.parent
+path: Path = root_path / "data" / "cleaned_data.csv"
+save_file_path = root_path/ "output_picture"
+
+
 df: pd.DataFrame = pd.read_csv(path, parse_dates=["release_date"])
 
 MIN_PLAY_TIME_FILTER = 2
@@ -97,6 +100,77 @@ print("Paid and F2p game Statistic")
 print(stats_df,"\n\n")
 print("Ratio of Game Statistic in (F2p/Paid) format")
 print(ratio_df)
+
+
+
+
+
+
+
+
+
+#------------------------------------------------------------------
+import matplotlib.pyplot as plt
+import numpy as np
+
+# 1. Separate the F2P and Paid statistics for easy plotting mapping
+f2p_stats = stats_df[stats_df['type'] == 'F2p'].set_index('platform')
+paid_stats = stats_df[stats_df['type'] == 'Paid'].set_index('platform')
+
+# Ensure both dataframes share the exact same platform alignment/ordering
+platforms = f2p_stats.index.tolist()
+x_indices = np.arange(len(platforms))
+bar_width = 0.20
+
+# 2. Initialize the Figure (Using a 2-panel layout to clearly separate Mean vs Median)
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6), dpi=100)
+
+# ==========================================
+# PANEL 1: Mean Achievements Comparison
+# ==========================================
+ax1.bar(x_indices - bar_width/2, f2p_stats['achievements_mean'], bar_width, 
+        label='F2P Games', color='#2ca02c', alpha=0.85) # Vivid Green for F2P
+ax1.bar(x_indices + bar_width/2, paid_stats['achievements_mean'], bar_width, 
+        label='Paid Games', color='#1f77b4', alpha=0.85) # Steady Blue for Paid
+
+ax1.set_title("Average (Mean) Achievements per Game", fontsize=12, fontweight='bold', pad=10)
+ax1.set_ylabel("Number of Achievements", fontsize=11)
+ax1.set_xticks(x_indices)
+ax1.set_xticklabels(platforms, fontsize=11)
+ax1.grid(axis='y', linestyle='--', alpha=0.4)
+ax1.legend(frameon=True, facecolor='white')
+
+# ==========================================
+# PANEL 2: Median Achievements Comparison
+# ==========================================
+ax2.bar(x_indices - bar_width/2, f2p_stats['achievements_median'], bar_width, 
+        label='F2P Games', color='#2ca02c', alpha=0.85)
+ax2.bar(x_indices + bar_width/2, paid_stats['achievements_median'], bar_width, 
+        label='Paid Games', color='#1f77b4', alpha=0.85)
+
+ax2.set_title("Typical (Median) Achievements per Game", fontsize=12, fontweight='bold', pad=10)
+ax2.set_ylabel("Number of Achievements", fontsize=11)
+ax2.set_xticks(x_indices)
+ax2.set_xticklabels(platforms, fontsize=11)
+ax2.grid(axis='y', linestyle='--', alpha=0.4)
+ax2.legend(frameon=True, facecolor='white')
+
+# 3. Overall Layout Polishing
+plt.suptitle("Steam Achievement Distribution Analysis: Free-to-Play vs. Paid Games\nAcross Cross-Platform Ecosystems", 
+             fontsize=14, fontweight='bold', y=1.02)
+
+plt.tight_layout()
+
+# 4. Save using your configured path variable and display
+plt.savefig(save_file_path / "q4_f2p_vs_paid_achievements_analysis.png", bbox_inches='tight')
+plt.show()
+
+
+
+
+
+
+
 
 
 

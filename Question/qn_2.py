@@ -10,10 +10,15 @@
 
 
 from pathlib import Path
+from matplotlib import pyplot as plt
+from matplotlib.ticker import FuncFormatter
 import pandas as pd
 
-base_path: Path = Path(__file__).resolve().parent.parent
-path: Path = base_path / "data" / "cleaned_data.csv"
+root_path: Path = Path(__file__).resolve().parent.parent
+path: Path = root_path / "data" / "cleaned_data.csv"
+save_file_path = root_path/ "output_picture"
+
+
 df: pd.DataFrame = pd.read_csv(path)
 
 
@@ -55,6 +60,74 @@ grped_df = grped_df.assign(
 sorted_df: pd.DataFrame = grped_df.sort_values(by="ratio", ascending=False)
 
 print(sorted_df)
+
+
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+# ----------------------------------------------------------------------------------------
+sorted_df['price_tier'] = pd.Categorical(sorted_df['price_tier'], categories=labels, ordered=True)
+plot_df = sorted_df.dropna(subset=['price_tier']).sort_values('price_tier')
+
+# 2. Initialize the dual-axis plot
+fig, ax1 = plt.subplots(figsize=(14, 7), dpi=100)
+
+# 3. Plot Total Games as Bars on Primary Y-Axis
+color_bars = '#4a90e2' # Professional slate blue
+bars = ax1.bar(plot_df['price_tier'], plot_df['total_games'], color=color_bars, alpha=0.85, width=0.5, label='Total Games')
+
+ax1.set_xlabel('Price Tiers', fontsize=12, fontweight='bold', labelpad=12)
+ax1.set_ylabel('Number of Games', color=color_bars, fontsize=12, fontweight='bold')
+ax1.tick_params(axis='y', labelcolor=color_bars)
+ax1.set_xticklabels(plot_df['price_tier'], rotation=25, ha='right', fontsize=10)
+ax1.grid(axis='y', linestyle='--', alpha=0.3)
+
+# 4. Plot Positive Review Ratio as a Line on Secondary Y-Axis
+ax2 = ax1.twinx()
+color_line = '#e67e22' # Warning/Insight orange
+line = ax2.plot(plot_df['price_tier'], plot_df['ratio'], color=color_line, marker='o', 
+                linewidth=2.5, markersize=8, label='Positive Review Ratio')
+
+ax2.set_ylabel('Positive Review Ratio (Positive / Total)', color=color_line, fontsize=12, fontweight='bold')
+ax2.tick_params(axis='y', labelcolor=color_line)
+
+# Format the ratio axis as percentages for cleaner readability
+ax2.yaxis.set_major_formatter(FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
+ax2.set_ylim(0.60, 0.95) # Zoom in on the variance (60% to 95%)
+
+# 5. Add Titles and Annotations
+plt.title('Steam Market Analysis: Game Volume vs. Player Sentiment by Price Tier', 
+          fontsize=14, fontweight='bold', pad=20)
+
+# Annotate the AAA+ outlier constraint so viewers know the sample size is tiny
+aaa_index = list(plot_df['price_tier']).index("AAA+(50.00-99.99)")
+aaa_ratio = plot_df.iloc[aaa_index]['ratio']
+ax2.annotate('Small Sample\n(8 Games)', xy=(aaa_index, aaa_ratio), xytext=(aaa_index - 0.8, aaa_ratio - 0.05),
+             arrowprops=dict(arrowstyle="->", color='#333333', lw=1), fontsize=9, color='#333333')
+
+# 6. Combine Legends
+lines_labels = [ax1.get_legend_handles_labels(), ax2.get_legend_handles_labels()]
+lines, labels = [sum(lol, []) for lol in zip(*lines_labels)]
+ax1.legend(lines, labels, loc='upper right', frameon=True, facecolor='white')
+
+plt.tight_layout()
+
+# 7. Save and Show
+plt.savefig(save_file_path / "q2_price_tier_sentiment_analysis.png", bbox_inches='tight')
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
 
 # ==============================================================================
 # Q2 — CONCLUSIONS: PRICE TIER vs. APPROVAL RATIO

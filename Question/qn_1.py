@@ -1,4 +1,6 @@
 from pathlib import Path
+from matplotlib import pyplot as plt
+import numpy as np
 import pandas as pd
 
 # ============================================================
@@ -25,8 +27,11 @@ FILTER_PLAYTIME: int = 2
 MIN_GAMES: int = 30
 
 # Load dataset
-base_path = Path(__file__).resolve().parent.parent
-path = base_path / "data" / "cleaned_data.csv"
+root_path = Path(__file__).resolve().parent.parent
+path = root_path / "data" / "cleaned_data.csv"
+save_file_path = root_path/ "output_picture"
+
+
 
 df:pd.DataFrame = pd.read_csv(path)
 
@@ -91,7 +96,8 @@ for genre in all_genres:
         "game_count": game_count
     })
 
-# Create dataframe
+
+
 stats_df = pd.DataFrame(results)
 
 # Sort by strongest skew/distortion
@@ -101,6 +107,59 @@ stats_df = stats_df.sort_values(
 )
 
 print(stats_df.to_string(index=False))
+
+stats_df = stats_df.sort_values(by="gap_ratio", ascending=True)
+
+# 1. Setup the figure and primary axes
+fig, ax1 = plt.subplots(figsize=(12, 8), dpi=100)
+
+# Define bar positions and width
+y_indices = np.arange(len(stats_df))
+bar_width = 0.35
+
+# 2. Plot Bars (Mean vs Median Playtime)
+rects1 = ax1.barh(y_indices + bar_width/2, stats_df['mean_playtime'], bar_width, 
+                 label='Mean Playtime', color='#3182bd', alpha=0.9)
+rects2 = ax1.barh(y_indices - bar_width/2, stats_df['median_playtime'], bar_width, 
+                 label='Median Playtime', color='#de2d26', alpha=0.9)
+
+# Labels and styling for primary axis
+ax1.set_xlabel('Playtime (Hours)', fontsize=12, fontweight='bold', labelpad=10)
+ax1.set_ylabel('Genres', fontsize=12, fontweight='bold')
+ax1.set_yticks(y_indices)
+ax1.set_yticklabels(stats_df['genre'], fontsize=11)
+ax1.set_title('Genre Engagement & Distortion Analysis\n(Comparison of Mean vs Median Playtime and Skew Ratio)', 
+             fontsize=14, fontweight='bold', pad=20)
+ax1.grid(axis='x', linestyle='--', alpha=0.5)
+
+# 3. Plot Line on Secondary Axis (Gap Ratio / Distortion)
+ax2 = ax1.twiny()  # Create a twin axis sharing the y-axis
+line = ax2.plot(stats_df['gap_ratio'], y_indices, color="#483C3C", 
+                marker='o', linewidth=2, markersize=6, label='Gap Ratio (Distortion)')
+
+# Labels and styling for secondary axis
+ax2.set_xlabel('Gap Ratio (Mean / Median)', color='#e6550d', fontsize=12, fontweight='bold', labelpad=10)
+ax2.tick_params(axis='x', labelcolor='#e6550d')
+ax2.spines['top'].set_color('#e6550d')
+ax2.spines['top'].set_linewidth(1.5)
+
+# 4. Combine Legends
+lines, labels = ax1.get_legend_handles_labels()
+lines2, labels2 = ax2.get_legend_handles_labels()
+ax1.legend(lines + lines2, labels + labels2, loc='lower right', frameon=True, facecolor='white', edgecolor='none')
+
+# Tight layout adjustments to prevent text cutting off
+plt.tight_layout()
+
+# 5. Save and Display
+# Using your script's save path variable:
+plt.savefig(save_file_path / "q1_genre_engagement_analysis.png", bbox_inches='tight')
+plt.show()
+
+
+
+
+
 
 # ==============================================================================
 # Q1 — CONCLUSIONS: GENRE ENGAGEMENT & DISTORTION

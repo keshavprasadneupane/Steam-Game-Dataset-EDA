@@ -12,9 +12,10 @@ import pandas as pd
 SHOWN_DEV =20
 
 # --- Data Loading ---
-current_file = Path(__file__).resolve()
-base_path: Path = current_file.parent.parent
-path: Path = base_path / "data" / "cleaned_data.csv"
+root_path: Path = Path(__file__).resolve().parent.parent
+path: Path = root_path / "data" / "cleaned_data.csv"
+save_file_path = root_path/ "output_picture"
+
 df: pd.DataFrame = pd.read_csv(path, parse_dates=["release_date"])
 
 # --- Helper Functions ---
@@ -126,52 +127,87 @@ sorted_df = final_df.sort_values("rank_score", ascending=False).reset_index(drop
 print(f"\n--- Top {SHOWN_DEV} Developers by Revenue Efficiency (Ranked by Total Revenue + Approval Ratio) ---")
 print(sorted_df.head(SHOWN_DEV))
 
-output_path = Path(current_file.parent / "qn_5_output.csv")
-sorted_df.to_csv(output_path, index=False)
 
 
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-import seaborn as sns
-from pathlib import Path
+
+
+
 
 # --- Visualization for Top 20 ---
+import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import matplotlib.patches as mpatches
+import seaborn as sns
+import numpy as np
+from pathlib import Path
 
-# 1. Clean the data: Remove non-ASCII characters to prevent font errors
-# and take the Top 20
+# 1. Clean the data
 top_20 = sorted_df.head(20).copy()
 top_20['developer'] = top_20['developer'].apply(
     lambda x: ''.join([i if ord(i) < 128 else '' for i in x]).strip()
 )
+top_20 = top_20.reset_index(drop=True)
 
-# Set visual style
 plt.style.use('ggplot')
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 18))
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(16, 18))
 
-# --- Graph 1: Revenue vs Approval Ratio (Efficiency) ---
-scatter = ax1.scatter(
-    top_20['total_revenue'] / 1e9,
-    top_20['median_approval'],
-    s=top_20['total_games'] * 80,  # Size by game count
-    c=top_20['median_approval'],
-    cmap='RdYlGn',
-    alpha=0.7,
-    edgecolors="black"
-)
+# --- Graph 1: Revenue vs Approval Ratio with per-developer color ---
+num_devs = len(top_20)
+cmap_devs = matplotlib.colormaps.get_cmap('tab20')
+dev_colors = [cmap_devs(i / num_devs) for i in range(num_devs)]
 
-# Global Benchmarks (Horizontal Lines)
-ax1.axhline(global_average, color='blue', linestyle='--', alpha=0.6, label=f'Global Mean ({global_average:.2f})')
-ax1.axhline(global_median, color='purple', linestyle='-.', alpha=0.6, label=f'Global Median ({global_median:.2f})')
+rng = np.random.default_rng(42)
 
-# Annotate developer names
-for i, txt in enumerate(top_20['developer']):
-    ax1.annotate(txt, (top_20['total_revenue'][i] / 1e9, top_20['median_approval'][i]),
-                 fontsize=9, xytext=(5, 5), textcoords='offset points')
+scatter_order = top_20.sort_values('total_games', ascending=False)
+
+games_min = scatter_order['total_games'].min()
+games_max = scatter_order['total_games'].max()
+games_range = (games_max - games_min) if games_max != games_min else 1
+
+for _, row in scatter_order.iterrows():
+    i = row.name
+    jitter_x = rng.uniform(-0.015, 0.015)
+
+    normalized_size = (row['total_games'] - games_min) / games_range
+    altitude_offset = (1 - normalized_size) * 0.02
+
+    ax1.scatter(
+        row['total_revenue'] / 1e9 + jitter_x,
+        row['median_approval'] + altitude_offset,
+        s=row['total_games'] * 60,
+        color=dev_colors[i],
+        alpha=1.0,
+        edgecolors="black",
+        linewidths=1.5,
+        zorder=3 + (1 - normalized_size) * 20
+    )
+
+ax1.axhline(global_average, color='blue', linestyle='--', linewidth=2,
+            label=f'Global Mean ({global_average:.2f})', zorder=100)
+ax1.axhline(global_median, color='purple', linestyle='-.', linewidth=2,
+            label=f'Global Median ({global_median:.2f})', zorder=100)
 
 ax1.set_title('Top 20 Developer Efficiency vs. Global Benchmarks', fontsize=16, pad=20)
 ax1.set_xlabel('Total Estimated Revenue ($ Billions)', fontsize=12)
 ax1.set_ylabel('Median Approval Ratio', fontsize=12)
-ax1.legend(loc='upper left')
+
+dev_patches = [
+    mpatches.Patch(color=dev_colors[i], label=top_20.loc[i, 'developer'])
+    for i in range(num_devs)
+]
+line_handles, _ = ax1.get_legend_handles_labels()
+
+ax1.legend(
+    handles=dev_patches + line_handles,
+    loc='upper left',
+    bbox_to_anchor=(1.01, 1),
+    borderaxespad=0,
+    fontsize=8,
+    title="Developer",
+    title_fontsize=9,
+    framealpha=0.9
+)
 
 # --- Graph 2: Revenue Ranking with Approval Heatmap ---
 sns.barplot(
@@ -184,7 +220,6 @@ sns.barplot(
     dodge=False
 )
 
-# Remove automatic legend to use a proper colorbar
 if ax2.get_legend():
     ax2.get_legend().remove()
 
@@ -192,24 +227,19 @@ ax2.set_title('Top 20 Developers by Total Revenue', fontsize=16, pad=20)
 ax2.set_xlabel('Revenue ($ Millions)', fontsize=12)
 ax2.set_ylabel('Developer', fontsize=12)
 
-# Colorbar for Approval Ratio
 sm = plt.cm.ScalarMappable(
-    cmap="viridis", 
+    cmap="viridis",
     norm=mcolors.Normalize(vmin=top_20['median_approval'].min(), vmax=top_20['median_approval'].max())
 )
-# Fixed: Pass the tuple (left, bottom, width, height)
-cbar_ax = fig.add_axes((0.92, 0.15, 0.02, 0.7)) 
-fig.colorbar(sm, cax=cbar_ax, label='Approval Ratio')
+fig.colorbar(sm, ax=ax2, location='right', shrink=0.8, pad=0.02, label='Approval Ratio')
 
-plt.tight_layout(rect=(0, 0, 0.9, 1)) # Adjust layout to fit colorbar
+plt.tight_layout(rect=(0, 0, 0.78, 1))
 
-# Save and Show
-graph_path = Path(current_file.parent / "top_20_developer_efficiency.png")
-plt.savefig(graph_path)
+graph_path = Path(save_file_path / "q5_top_20_developer_efficiency.png")
+plt.savefig(graph_path, bbox_inches='tight')
 plt.show()
 
 print(f"Analysis complete. Graph saved to: {graph_path}")
-
 
 
 
@@ -240,6 +270,7 @@ print(f"Analysis complete. Graph saved to: {graph_path}")
 # 19  Treyarch                   4            10000000.0    2500000.0      342400000.0(342.40M)   85600000.0(85.60M)   86225000.0(86.22M)   47440270.8(47.44M)   0.818106       0.866276         0.142620          1.027327
 
 
+
 # Observation
 # 1. Macro Analysis (Product Quality vs. Commercial Viability):
 # On a surface level, the top 20 developers demonstrate a strong equilibrium between critical 
@@ -253,7 +284,7 @@ print(f"Analysis complete. Graph saved to: {graph_path}")
 #      immense financial and critical efficiency. With an exceptional median revenue (~$92.5M) 
 #      and owner count (2.5M), their portfolio represents a concentrated collection of cultural 
 #      milestones where every product secures premium market capture and high player loyalty.
-
+#
 #   B. High-Volume Ecosystems (> 5 Games): Larger publishers like Ubisoft (53 games) show a 
 #      "long-tail" distribution. While total revenue remains high due to portfolio scale, their 
 #      median approval ratings and median revenues ($6.4M) are significantly lower than their 
@@ -278,14 +309,19 @@ print(f"Analysis complete. Graph saved to: {graph_path}")
 # introduced, the ranking distribution would shift dramatically for corporate publishers, while 
 # legacy anchors like Valve and high-reputation studios like FromSoftware would maintain dominance.
 #
+# 5. Sentiment Skewness (Median vs. Mean Divergence):
+# Across the top tier, we observe a negative skew where the Approval Median consistently exceeds 
+# the Mean. From an industry perspective, this divergence indicates that while a studio's core 
+# catalog maintains tight, reliable quality standards (reflected in a high median), the overall 
+# average is heavily dragged down by severe, isolated negative outliers. This is the mathematical 
+# signature of modern platform volatility—such as "review-bombing" campaigns, retroactive backlash 
+# against post-launch monetization updates, or high-profile "hate-play" titles within an otherwise 
+# respected corporate catalog.
+#
 # Summary Conclusion:
 # Premium ranking is achieved either through specialized critical excellence that guarantees high 
 # per-unit revenue (FromSoftware), massive historical platform advantage (Valve), structural genre 
 # monopoly (PUBG), or high-volume porting and catalog scaling (Feral/Aspyr/Ubisoft).
-
-
-
-
 
 
 
@@ -317,3 +353,7 @@ print(f"Analysis complete. Graph saved to: {graph_path}")
 # but finally there is still 1 issue need to be addressed since the data is from 2019 and current is 2026,
 # these days people are really angry on Ubisoft and Bethesda , if the actual data from current year available this ranking 
 # cart will be 99% different but the valve will be still dominating the chart
+#	In this special instance the median > mean this means that on average gamers give
+#	consistant rating but there are some cases like review bombing, or some special cases
+#	where players change their orgginal review to negative review due to some change in game
+# 	or some games just do hate play on games.
